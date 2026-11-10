@@ -1,45 +1,78 @@
 
-import json
-import time
 import random
+import time
+import json
+from datetime import datetime
+
 import paho.mqtt.client as mqtt
 
-# MQTT broker details
-BROKER = "broker.hivemq.com"
+
+# MQTT broker configuration
+BROKER = "localhost"
 PORT = 1883
 
-# Motor communication topic
-TOPIC = "nexus/demo/MOTOR001/telemetry"
+# Machine identification
+MACHINE_ID = "NEXUS_MOTOR_001"
+
+# MQTT communication topic
+TOPIC = "nexus/motor/001/telemetry"
+
 
 # Create MQTT publisher
 client = mqtt.Client(
-    callback_api_version=mqtt.CallbackAPIVersion.VERSION2
+    callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+    client_id="NEXUS_MOTOR"
 )
 
-# Connect to broker
-client.connect(BROKER, PORT, 60)
 
-print("Motor Simulator Started!")
-print("Sending live motor data to NEXUS...")
+def main():
 
-# Continuously generate sensor readings
-while True:
+    print("Connecting motor to NEXUS MQTT broker...")
 
-    motor_data = {
-        "device_id": "MOTOR001",
-        "temperature": round(random.uniform(50, 80), 2),
-        "vibration": round(random.uniform(1, 5), 2),
-        "rpm": random.randint(1200, 1800),
-        "timestamp": time.time()
-    }
+    client.connect(BROKER, PORT, 60)
+    client.loop_start()
 
-    # Convert Python data into JSON
-    message = json.dumps(motor_data)
+    print("NEXUS Motor Simulator Started!")
+    print("Sending live motor data to NEXUS...")
 
-    # Publish data to MQTT broker
-    client.publish(TOPIC, message)
+    try:
+        while True:
 
-    print("Published:", motor_data)
+            # Generate industrial motor readings
+            machine_data = {
+                "machine_id": MACHINE_ID,
+                "temperature": round(random.uniform(55, 75), 2),
+                "vibration": round(random.uniform(1, 5), 2),
+                "rpm": random.randint(1350, 1500),
+                "current": round(random.uniform(3, 6), 2),
+                "status": "RUNNING",
+                "timestamp": datetime.now().astimezone().isoformat()
+            }
 
-    # Send data every 2 seconds
-    time.sleep(2)
+            # Convert Python dictionary into JSON
+            payload = json.dumps(machine_data)
+
+            # Publish readings to MQTT broker
+            result = client.publish(
+                TOPIC,
+                payload,
+                qos=1
+            )
+
+            result.wait_for_publish()
+
+            print("DATA SENT TO NEXUS:", payload)
+
+            # Generate new readings every second
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        print("\nMotor simulator stopped.")
+
+    finally:
+        client.loop_stop()
+        client.disconnect()
+
+
+if __name__ == "__main__":
+    main()
