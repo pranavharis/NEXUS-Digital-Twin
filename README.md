@@ -22,3 +22,5 @@ visualization and predictive insights.
 - IoT Sensors
 - HTML, CSS, JavaScript
 - Database
+# NEXUS-Digital-Twin
+Real-Time Industrial IoT Monitoring and Digital Twin Platform
